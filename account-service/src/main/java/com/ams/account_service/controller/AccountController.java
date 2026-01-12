@@ -19,17 +19,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AccountController {
 
-    private final AccountService accountService;
+  private final AccountService accountService;
 
-    @PostMapping
-    public ResponseEntity<AccountDto> createAccount(@Valid @RequestBody CreateAccountRequest accountRequest) {
-        AccountDto created = accountService.createAccount(accountRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
+  @PostMapping
+  public ResponseEntity<AccountDto> createAccount(
+      @Valid @RequestBody CreateAccountRequest accountRequest) {
+    AccountDto created = accountService.createAccount(accountRequest);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
 
-    @GetMapping("/{accountNumber}")
-    public ResponseEntity<AccountDto> getAccountDetails(@PathVariable String accountNumber) {
-        return ResponseEntity.ok(accountService.getAccountDetails(accountNumber));
-    }
+  @GetMapping("/{accountNumber}")
+  public ResponseEntity<AccountDto> getAccountDetails(@PathVariable String accountNumber) {
+    return ResponseEntity.ok(accountService.getAccountDetails(accountNumber));
+  }
 }
-

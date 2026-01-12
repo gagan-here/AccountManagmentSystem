@@ -8,18 +8,19 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "topups")
 public class Topup {
 
-  @Id
-  @GeneratedValue
-  private UUID id;
+  @Id @GeneratedValue private UUID id;
 
   @Column(name = "from_account", nullable = false)
   private String fromAccount;
@@ -46,6 +47,4 @@ public class Topup {
     this.status = status;
     this.createdAt = Instant.now();
   }
-
 }
-
