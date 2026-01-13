@@ -34,9 +34,10 @@ bin/kafka-server-start.sh config/server.properties
 4. account-service
 5. topup-service
 
+---
 
 # API endpoint and payload
-Register user:
+### Register user:
 http://localhost:8080/auth/signup
 ```json
 {
@@ -49,7 +50,7 @@ http://localhost:8080/auth/signup
 }
 ```
 
-Login user
+### Login user
 http://localhost:8080/auth/login
 ```json
 {
@@ -57,8 +58,10 @@ http://localhost:8080/auth/login
   "password": "pass"
 }
 ```
+After executing above login user api, a token will be generated. 
+Use this token in authorization header before executing below requests
 
-Create account
+### Create account
 http://localhost:8080/accounts
 ```json
 {
@@ -68,7 +71,10 @@ http://localhost:8080/accounts
 }
 ```
 
-Topup:
+### Get account
+http://localhost:8080/accounts/{accountNumber}
+
+### Topup:
 http://localhost:8080/topup
 ```json
 {
