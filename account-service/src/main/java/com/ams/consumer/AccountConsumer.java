@@ -19,9 +19,12 @@ public class AccountConsumer {
 
   private final AccountService accountService;
 
-  @RetryableTopic(attempts = "4", backoff = @Backoff)
+  @RetryableTopic(
+      attempts = "4",
+      backoff = @Backoff(delay = 2000, multiplier = 1.5, maxDelay = 10000))
   @KafkaListener(topics = "topup-created-topic", groupId = "account-service")
-  public void listenTopupAmount(TopupCreatedEvent event, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
+  public void listenTopupAmount(
+      TopupCreatedEvent event, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
     try {
       log.info("Received topup created event: {}, topic {} ", event, topic);
 
@@ -32,7 +35,8 @@ public class AccountConsumer {
   }
 
   @DltHandler
-  public void listenDLT(TopupCreatedEvent event, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
+  public void listenDLT(
+      TopupCreatedEvent event, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
     log.info("DLT received : {}, topic {}", event, topic);
   }
 }

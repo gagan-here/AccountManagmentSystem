@@ -6,12 +6,10 @@ import com.ams.enums.TopupStatus;
 import com.ams.event.TopupCreatedEvent;
 import com.ams.repository.TopupRepository;
 import com.ams.service.TopupService;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -46,56 +44,52 @@ public class TopupServiceImpl implements TopupService {
             TopupStatus.PENDING);
     topup = topupRepository.save(topup);
 
-    CompletableFuture<SendResult<Long, TopupCreatedEvent>> sendFuture =
+    CompletableFuture<SendResult<Long, TopupCreatedEvent>> future =
         kafkaTemplate.send(TOPUP_CREATED_TOPIC, topupCreatedEvent);
 
-    // Submit a background task that waits for the broker (or times out) and updates DB accordingly
-    Topup finalTopup = topup;
-    CompletableFuture.runAsync(
-        () -> {
-          UUID topupId = finalTopup.getId();
-          log.info("Starting async publish ack wait for topup id={}", topupId);
-          try {
-            log.debug("Waiting for sendFuture ack for topup id={} (timeout=10s)", topupId);
-            SendResult<Long, TopupCreatedEvent> sr = sendFuture.get(10, TimeUnit.SECONDS);
-            log.info("Publish ack received for topup id={} sendResult={}", topupId, sr);
-            // On success, update status to PUBLISHED
-            topupRepository
-                .findById(finalTopup.getId())
-                .ifPresent(
-                    db -> {
-                      db.setStatus(TopupStatus.COMPLETED);
-                      topupRepository.save(db);
-                      log.info("Topup id={} marked as COMPLETED", topupId);
-                    });
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            log.warn(
-                "Thread interrupted while waiting for publish ack for topup id={}", topupId, ie);
-            topupRepository
-                .findById(finalTopup.getId())
-                .ifPresent(
-                    db -> {
-                      db.setStatus(TopupStatus.FAILED);
-                      topupRepository.save(db);
-                    });
-          } catch (Exception ex) {
+    UUID topupId = topup.getId();
+
+    future.whenCompleteAsync(
+        (result, ex) -> {
+          if (ex == null) {
+            log.info(
+                "Sent message for topup id=[{}] with offset=[{}]",
+                topupId,
+                result.getRecordMetadata().offset());
+
+            // Update status to COMPLETED
+            updateTopupStatus(topupId, TopupStatus.COMPLETED);
+
+          } else {
             log.error(
-                "Error while waiting for publish ack for topup id={}: {}",
+                "Unable to send message for topup id=[{}] due to: {}",
                 topupId,
                 ex.getMessage(),
                 ex);
-            Optional<Topup> opt = topupRepository.findById(topupId);
-            if (opt.isPresent()) {
-              Topup db = opt.get();
-              db.setStatus(TopupStatus.FAILED);
-              topupRepository.save(db);
-              log.info("Topup id={} marked as FAILED due to exception", topupId);
-            } else {
-              log.warn("Topup id={} not found in DB when marking FAILED after exception", topupId);
-            }
+
+            // Update status to FAILED
+            updateTopupStatus(topupId, TopupStatus.FAILED);
           }
         },
         publishAckExecutor);
+  }
+
+  private void updateTopupStatus(UUID topupId, TopupStatus status) {
+    try {
+      topupRepository
+          .findById(topupId)
+          .ifPresentOrElse(
+              topup -> {
+                topup.setStatus(status);
+                topupRepository.save(topup);
+                log.info("Topup id={} marked as {}", topupId, status);
+              },
+              () ->
+                  log.warn(
+                      "Topup id={} not found in DB when updating status to {}", topupId, status));
+    } catch (Exception ex) {
+      log.error(
+          "Failed to update topup id={} status to {}: {}", topupId, status, ex.getMessage(), ex);
+    }
   }
 }
