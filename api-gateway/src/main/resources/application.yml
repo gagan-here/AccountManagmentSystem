@@ -1,0 +1,30 @@
+spring.application.name: api-gateway
+
+server.port: 8080
+
+eureka.client.service-url.defaultZone: http://localhost:8761/eureka
+
+jwt.secretKey: jasgdgjks4546jggjkakd7fjbasj834bbad2jkbjkbsajkbajk
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: student-service
+          uri: lb://ACCOUNT-SERVICE
+          predicates:
+            - Path=/accounts/**
+          filters:
+            - name: AuthenticationFilter
+
+        - id: teacher-service
+          uri: lb://TOPUP-SERVICE
+          predicates:
+            - Path=/topup/**
+          filters:
+            - name: AuthenticationFilter
+
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth/**
