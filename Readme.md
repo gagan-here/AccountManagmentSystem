@@ -4,6 +4,7 @@
 Make sure the following are installed:
 
 - Java 17+
+- Postgres DB
 - Maven 3.8+
 - Apache Kafka
 - Kafka (KRaft mode)
@@ -20,7 +21,13 @@ Go to directory where kafka is installed
 cd kafka
 bin/kafka-server-start.sh config/server.properties
 ```
-# Step 2 - Run below services in order
+
+# Step 2 - Create following databases
+1. users
+2. account
+3. topup
+
+# Step 3 - Run below services in order
 1. discovery-server
 2. api-gateway
 3. auth-service
